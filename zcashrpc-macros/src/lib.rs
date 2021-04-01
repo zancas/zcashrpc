@@ -8,6 +8,7 @@ use proc_macro::TokenStream;
 #[proc_macro]
 pub fn declare_all_rpc_methods(input: TokenStream) -> TokenStream {
     let input_ast = syn::parse_macro_input!(input as syn::ItemExternCrate);
+    dbg!(&ast);
     quote::quote!(input_ast).into()
 }
 
