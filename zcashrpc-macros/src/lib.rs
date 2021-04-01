@@ -9,6 +9,9 @@ use proc_macro::TokenStream;
 pub fn declare_all_rpc_methods(input: TokenStream) -> TokenStream {
     let input_ast = syn::parse_macro_input!(input as syn::ItemExternCrate);
     dbg!(&input_ast);
+    struct V;
+    use syn::visit_mut::VisitMut;
+    impl VisitMut for V {}
     quote::quote!("a").into()
 }
 
