@@ -10,6 +10,6 @@ proc-macro = true
 [dependencies]
 quote = "1.0"
 proc-macro2 = "1.0"
-syn = { version = "1.0.67", features = [ "full", "parsing" ] }
+syn = { version = "1.0.67", features = [ "full", "parsing", "visit-mut" ] }
 json_typegen = "0.4.1"
 zcashrpc-api = { git = "https://github.com/zingolabs/zcashrpc-api.git", branch = "main" }
