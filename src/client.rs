@@ -1,4 +1,4 @@
-//! Includes both `Client` and all of the RPC response types.
+//! Includes the `Client`
 #[macro_use]
 mod callrpc;
 pub mod utils;
