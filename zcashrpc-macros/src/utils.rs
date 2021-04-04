@@ -92,3 +92,20 @@ pub fn format_input(
         strip_types(params.stream().into_iter(), Vec::new(), NextIdent::Arg);
     (call_ident, response_ident, param_stream, arg_id_stream)
 }
+
+use syn::visit_mut::VisitMut;
+struct V;
+impl VisitMut for V {
+    fn visit_ident_mut(&mut self, ident: &mut syn::Ident) {
+        dbg!(&ident);
+        syn::visit_mut::visit_ident_mut(self, ident);
+    }
+}
+use proc_macro::TokenStream;
+pub fn extract_response_idents() -> Vec<TokenStream> {
+    let pathstr = &format!(
+        "{}/zcashrpc_api/src/lib.rs",
+        &std::env::var("OUT_DIR").unwrap()
+    );
+    vec![]
+}
