@@ -6,10 +6,8 @@ mod utils;
 use proc_macro::TokenStream;
 
 #[proc_macro]
-pub fn declare_all_rpc_methods(input: TokenStream) -> TokenStream {
-    let mut input_ast = syn::parse_macro_input!(input as syn::ItemExternCrate);
-    dbg!(&input_ast);
-    V.visit_item_extern_crate_mut(&mut input_ast);
+pub fn declare_all_rpc_methods(_: TokenStream) -> TokenStream {
+    utils::extract_response_idents();
     quote::quote!("a").into()
 }
 

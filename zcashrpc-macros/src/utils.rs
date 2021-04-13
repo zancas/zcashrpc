@@ -101,11 +101,17 @@ impl VisitMut for V {
         syn::visit_mut::visit_ident_mut(self, ident);
     }
 }
-use proc_macro::TokenStream;
-pub fn extract_response_idents() -> Vec<TokenStream> {
+pub fn extract_response_idents() -> String {
     let pathstr = &format!(
-        "{}/zcashrpc_api/src/lib.rs",
+        "{}/zcashrpc-api/src/lib.rs",
         &std::env::var("OUT_DIR").unwrap()
     );
-    vec![]
+    dbg!(&pathstr);
+    let raw_rs = std::path::Path::new(pathstr);
+    let mut src = String::new();
+    let mut file = std::fs::File::open(&raw_rs).expect("Unable to open file");
+    use std::io::Read as _;
+    file.read_to_string(&mut src).expect("Unable to read file");
+    //syn::parse_file(&src).expect("Unable to parse file").into()
+    src
 }

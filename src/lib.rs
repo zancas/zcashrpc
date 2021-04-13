@@ -19,9 +19,7 @@ mod test {
     #[test]
     fn call_declare_all_rpc_methods() {
         use zcashrpc_macros::declare_all_rpc_methods;
-        declare_all_rpc_methods!(
-            extern crate zcashrpc_api;
-        );
+        declare_all_rpc_methods!();
     }
 
     #[test]
