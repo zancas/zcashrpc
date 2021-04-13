@@ -94,10 +94,10 @@ pub fn format_input(
 }
 
 use syn::visit_mut::VisitMut;
-struct V;
+pub struct V;
 impl VisitMut for V {
     fn visit_ident_mut(&mut self, ident: &mut syn::Ident) {
-        dbg!(&ident);
+        dbg!(&ident.to_string());
         syn::visit_mut::visit_ident_mut(self, ident);
     }
 }
