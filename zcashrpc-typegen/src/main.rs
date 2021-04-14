@@ -311,20 +311,11 @@ fn enumgen(
                     }
                     let field_data = handle_fields(enum_name, obj)?;
                     inner_structs.extend(field_data.inner_structs);
-                    match field_data.case {
-                        special_cases::Case::Regular => {
-                            let variant_body_tokens =
-                                field_data.ident_val_tokens;
-                            Ok(quote!(
+                    let variant_body_tokens = field_data.ident_val_tokens;
+                    Ok(quote!(
                             #variant_name_tokens {
                                 #(#variant_body_tokens)*
                             },))
-                        }
-                        other_case => unimplemented!(
-                            "Hit special case {:?} in enumgen",
-                            other_case
-                        ),
-                    }
                 }
                 non_object => {
                     let (variant_body_tokens, new_structs, _terminal_enum) =
