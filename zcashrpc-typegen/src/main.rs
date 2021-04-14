@@ -26,70 +26,64 @@ fn main() {
     input_files.sort_unstable_by(|file_node1, file_node2| {
         file_node1.path().cmp(&file_node2.path())
     });
-    let mut processed_rpc_arguments = None;
-    let mut processed_rpc_name: Option<proc_macro2::Ident> = None;
+    let mut arguments = std::collections::BTreeMap::new();
+    let mut responses = std::collections::BTreeMap::new();
     for filenode in input_files {
         let file_name = filenode.file_name();
         let file_name = file_name.to_string_lossy();
-        if file_name.ends_with("_arguments.json") {
-            match process_arguments(&filenode.path()) {
-                Ok((rpc_name, code)) => {
-                    if let Some(name) = processed_rpc_name {
-                        println!(
-                            "WARNING: No response section found for {}",
-                            name.to_string()
+        match file_name {
+            name if name.ends_with("_response.json") => {
+                match process_response(&filenode.path()) {
+                    Ok(processed_response) => {
+                        responses.insert(
+                            name.strip_suffix("_response.json")
+                                .unwrap()
+                                .to_string(),
+                            processed_response,
                         );
                     }
-                    processed_rpc_name = Some(rpc_name);
-                    processed_rpc_arguments = Some(code);
-                }
-                Err(error::TypegenError::Annotation(err))
-                    if err.kind
-                        == error::InvalidAnnotationKind::Insufficient =>
-                {
-                    ()
-                }
-                _ => todo!("Holy moly something is messed up!"),
-            }
-        } else if file_name.ends_with("_response.json") {
-            match process_response(&filenode.path()) {
-                Ok((rpc_name, code)) => {
-                    if let Some(arguments_name) = &processed_rpc_name {
-                        if &rpc_name == arguments_name {
-                            write_output_to_file(quote!(
-                                    pub mod #rpc_name {
-                                        #processed_rpc_arguments
-                                        #code
-                                    }
-                            ));
-                            processed_rpc_arguments = None;
-                            processed_rpc_name = None;
-                        }
-                    } else {
-                        println!(
-                            "WARNING: No arguments found for {}",
-                            rpc_name.to_string()
-                        );
-                        write_output_to_file(quote!(
-                                pub mod #rpc_name {
-                                    #code
-                                }
-                        ));
-                        if let Some(name) = &processed_rpc_name {
-                            println!("Instead found: {}", name.to_string());
-                        }
+                    Err(error::TypegenError::Annotation(err))
+                        if err.kind
+                            == error::InvalidAnnotationKind::Insufficient =>
+                    {
+                        ()
+                    }
+                    Err(other_error) => {
+                        panic!("Recieved error '{:?}'", other_error)
                     }
                 }
-                Err(error::TypegenError::Annotation(err))
-                    if err.kind
-                        == error::InvalidAnnotationKind::Insufficient =>
-                {
-                    ()
-                }
-                _ => todo!("Holy moly something is messed up!"),
             }
-        } else {
-            panic!("Invalid file name: {}", file_name)
+            name if name.ends_with("_arguments.json") => {
+                arguments.insert(
+                    name.strip_suffix("_arguments.json").unwrap().to_string(),
+                    process_arguments(&filenode.path()).unwrap(),
+                );
+            }
+            name => panic!("Bad file name: '{}'", name),
+        }
+    }
+    for (name, resp) in responses {
+        let mod_name = get_mod_name(&name);
+        let args = arguments.remove(&name);
+        write_output_to_file(quote!(
+            pub mod #mod_name {
+                #args
+                #resp
+            }
+        ));
+        if args.is_none() {
+            eprintln!("WARNING: No arguments found for '{}'", name)
+        }
+    }
+    for (name, _resp) in arguments {
+        match name.as_str() {
+            "z_getoperationresult"
+            | "z_getoperationstatus"
+            | "getblocktemplate" => eprintln!(
+                "WARNING: Missing response for '{}', this is expected behavior",
+                name
+            ),
+            otherwise => panic!("Missing response for '{}'", otherwise),
         }
     }
 }
@@ -107,6 +101,14 @@ fn write_output_to_file(code: TokenStream) {
         .unwrap()
         .status
         .success());
+}
+
+fn get_mod_name(name: &str) -> proc_macro2::Ident {
+    callsite_ident(&if special_cases::RESERVED_KEYWORDS.contains(&name) {
+        format!("{}_mod", name)
+    } else {
+        name.to_string()
+    })
 }
 
 fn under_to_camel(name: &str) -> String {
@@ -131,11 +133,8 @@ fn camel_to_under(name: &str) -> String {
         .join("_")
 }
 
-fn process_response(
-    file: &std::path::Path,
-) -> TypegenResult<(proc_macro2::Ident, TokenStream)> {
-    let (mod_name, type_name, file_body) =
-        get_names_and_body_from_file(file, "_response");
+fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
+    let (type_name, file_body) = get_name_and_body_from_file(file);
     let mut output = match file_body {
         serde_json::Value::Array(mut arg_sets) => match arg_sets.len() {
             0 => emptygen(&type_name),
@@ -154,14 +153,11 @@ fn process_response(
 
     output.sort_by(|ts1, ts2| ts1.to_string().cmp(&ts2.to_string()));
     output.dedup_by(|ts1, ts2| ts1.to_string() == ts2.to_string());
-    Ok((mod_name, quote::quote!(#(#output)*)))
+    Ok(quote::quote!(#(#output)*))
 }
 
-fn process_arguments(
-    file: &std::path::Path,
-) -> TypegenResult<(proc_macro2::Ident, TokenStream)> {
-    let (mod_name, type_name, file_body) =
-        get_names_and_body_from_file(file, "_arguments");
+fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
+    let (type_name, file_body) = get_name_and_body_from_file(file);
     let mut output = match file_body {
         serde_json::Value::Array(mut arg_sets) => match arg_sets.len() {
             0 => emptygen(&type_name),
@@ -183,26 +179,17 @@ fn process_arguments(
 
     output.sort_by(|ts1, ts2| ts1.to_string().cmp(&ts2.to_string()));
     output.dedup_by(|ts1, ts2| ts1.to_string() == ts2.to_string());
-    Ok((mod_name, quote::quote!(#(#output)*)))
+    Ok(quote::quote!(#(#output)*))
 }
 
 const VARIANT_NAMES: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
 
-fn get_names_and_body_from_file(
+fn get_name_and_body_from_file(
     file: &std::path::Path,
-    suffix: &str,
-) -> (proc_macro2::Ident, String, serde_json::Value) {
+) -> (String, serde_json::Value) {
     let (file_name, file_body) = get_data(file);
-    let name = file_name.strip_suffix(suffix).unwrap();
-    let mod_name = callsite_ident(&if special_cases::RESERVED_KEYWORDS
-        .contains(&name.as_ref())
-    {
-        format!("{}_mod", &name)
-    } else {
-        name.to_string()
-    });
     let type_name = under_to_camel(&file_name);
-    (mod_name, type_name, file_body)
+    (type_name, file_body)
 }
 
 fn get_data(file: &std::path::Path) -> (String, serde_json::Value) {
@@ -411,7 +398,7 @@ fn handle_argument_field_name(field_name: String) -> String {
                 "6" => "six",
                 c if c.chars().next().unwrap().is_alphabetic() => c,
                 c => {
-                    println!(
+                    eprintln!(
                         "WARNING: omitting bad char '{}' in field name '{}'",
                         c, &field_name
                     );
@@ -582,7 +569,7 @@ mod unit {
             );
             let output = process_response(getinfo_path);
             assert_eq!(
-                output.unwrap().1.to_string(),
+                output.unwrap().to_string(),
                 test_consts::GETINFO_RESPONSE
             );
         }
