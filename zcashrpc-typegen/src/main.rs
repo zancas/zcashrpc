@@ -170,7 +170,11 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
                     under_to_camel(&type_name)
                 ),
             },
-            _ => enumgen(arg_sets, &type_name, true)?,
+            2 => enumgen(arg_sets, &type_name, true)?,
+            otherwise => {
+                eprint!("Error, known RPC help output contains a maximum of two sets of arguments, but we found {} this time.", otherwise);
+                enumgen(arg_sets, &type_name, true)?
+            }
         },
         non_array => {
             panic!("Received {}, expected array", non_array.to_string())
