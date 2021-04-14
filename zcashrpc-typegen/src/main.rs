@@ -148,7 +148,7 @@ fn process_response(file: &std::path::Path) -> TypegenResult<TokenStream> {
                 }
                 val => alias(val, &type_name)?,
             },
-            _ => enumgen(arg_sets, &type_name, false)?,
+            _ => response_enumgen(arg_sets, &type_name)?,
         },
         non_array => {
             panic!("Received {}, expected array", non_array.to_string())
@@ -288,6 +288,48 @@ fn handle_options_and_keywords(
     }
 }
 
+fn response_enumgen(
+    inner_nodes: Vec<serde_json::Value>,
+    //This one layer out from the map that's passed to structgen!
+    //Don't let the identical type signatures fool you.
+    enum_name: &str,
+) -> TypegenResult<Vec<TokenStream>> {
+    assert!(inner_nodes.len() <= VARIANT_NAMES.len());
+    let mut inner_structs = Vec::new();
+    let ident = callsite_ident(enum_name);
+    let enum_code: Vec<TokenStream> = inner_nodes
+        .into_iter()
+        .zip(VARIANT_NAMES.iter())
+        .map(|(value, variant_name)| {
+            let variant_name = capitalize_first_char(&variant_name);
+            let variant_name_tokens = callsite_ident(&variant_name);
+            match value {
+                serde_json::Value::Object(mut obj) => {
+                    let field_data = handle_fields(enum_name, obj)?;
+                    inner_structs.extend(field_data.inner_structs);
+                    let variant_body_tokens = field_data.ident_val_tokens;
+                    Ok(quote!(
+                            #variant_name_tokens {
+                                #(#variant_body_tokens)*
+                            },))
+                }
+                non_object => {
+                    let (variant_body_tokens, new_structs, _terminal_enum) =
+                        tokenize::value(&variant_name, non_object)?;
+                    inner_structs.extend(new_structs);
+                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
+                }
+            }
+        })
+        .collect::<TypegenResult<Vec<TokenStream>>>()?;
+    inner_structs.push(quote!(
+            #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            pub enum #ident {
+                #(#enum_code)*
+            }
+    ));
+    Ok(inner_structs)
+}
 fn enumgen(
     inner_nodes: Vec<serde_json::Value>,
     //This one layer out from the map that's passed to structgen!
