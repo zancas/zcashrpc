@@ -7,6 +7,7 @@ mod tokenize;
 use error::TypegenResult;
 use proc_macro2::TokenStream;
 use quote::quote;
+use std::collections::BTreeMap;
 
 /// Process quizface-formatted response specifications from files, producing
 /// Rust types, in the `rpc_response_types.rs` file.
@@ -25,38 +26,7 @@ fn main() {
     let mut arguments = std::collections::BTreeMap::new();
     let mut responses = std::collections::BTreeMap::new();
     for filenode in input_files {
-        let file_name = filenode.file_name();
-        let file_name = file_name.to_string_lossy();
-        match file_name {
-            name if name.ends_with("_response.json") => {
-                match process_response(&filenode.path()) {
-                    Ok(processed_response) => {
-                        responses.insert(
-                            name.strip_suffix("_response.json")
-                                .unwrap()
-                                .to_string(),
-                            processed_response,
-                        );
-                    }
-                    Err(error::TypegenError::Annotation(err))
-                        if err.kind
-                            == error::InvalidAnnotationKind::Insufficient =>
-                    {
-                        ()
-                    }
-                    Err(other_error) => {
-                        panic!("Recieved error '{:?}'", other_error)
-                    }
-                }
-            }
-            name if name.ends_with("_arguments.json") => {
-                arguments.insert(
-                    name.strip_suffix("_arguments.json").unwrap().to_string(),
-                    process_arguments(&filenode.path()).unwrap(),
-                );
-            }
-            name => panic!("Bad file name: '{}'", name),
-        }
+        dispatch_to_processors(filenode, &mut arguments, &mut responses);
     }
     for (name, resp) in responses {
         let mod_name = get_mod_name(&name);
@@ -84,6 +54,44 @@ fn main() {
     }
 }
 
+fn dispatch_to_processors(
+    filenode: std::fs::DirEntry,
+    arguments: &mut BTreeMap<String, TokenStream>,
+    responses: &mut BTreeMap<String, TokenStream>,
+) {
+    let file_name = filenode.file_name();
+    let file_name = file_name.to_string_lossy();
+    match file_name {
+        name if name.ends_with("_response.json") => {
+            match process_response(&filenode.path()) {
+                Ok(processed_response) => {
+                    responses.insert(
+                        name.strip_suffix("_response.json")
+                            .unwrap()
+                            .to_string(),
+                        processed_response,
+                    );
+                }
+                Err(error::TypegenError::Annotation(err))
+                    if err.kind
+                        == error::InvalidAnnotationKind::Insufficient =>
+                {
+                    ()
+                }
+                Err(other_error) => {
+                    panic!("Recieved error '{:?}'", other_error)
+                }
+            }
+        }
+        name if name.ends_with("_arguments.json") => {
+            arguments.insert(
+                name.strip_suffix("_arguments.json").unwrap().to_string(),
+                process_arguments(&filenode.path()).unwrap(),
+            );
+        }
+        name => panic!("Bad file name: '{}'", name),
+    }
+}
 fn write_output_to_file(code: TokenStream) {
     use std::io::Write as _;
     let mut outfile = std::fs::OpenOptions::new()
