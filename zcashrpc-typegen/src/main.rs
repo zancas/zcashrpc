@@ -15,17 +15,13 @@ fn main() {
            //is in early alpha, and output is subject to change at any time.
 "#;
     std::fs::write(output_path(), initial_comment).unwrap();
-    let mut input_files = std::fs::read_dir(&std::path::Path::new(
+    let input_files = std::fs::read_dir(&std::path::Path::new(
         &std::env::args()
             .nth(1)
             .unwrap_or("./example_dir".to_string()),
     ))
     .unwrap()
-    .map(Result::unwrap)
-    .collect::<Vec<std::fs::DirEntry>>();
-    input_files.sort_unstable_by(|file_node1, file_node2| {
-        file_node1.path().cmp(&file_node2.path())
-    });
+    .map(Result::unwrap);
     let mut arguments = std::collections::BTreeMap::new();
     let mut responses = std::collections::BTreeMap::new();
     for filenode in input_files {
