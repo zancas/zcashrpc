@@ -305,15 +305,12 @@ fn response_enumgen(
         .map(|(value, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
-                serde_json::Value::Object(mut obj) => {
-                    let field_data = handle_fields(enum_name, obj)?;
-                    inner_structs.extend(field_data.inner_structs);
-                    let variant_body_tokens = field_data.ident_val_tokens;
-                    Ok(quote!(
-                            #variant_name_tokens {
-                                #(#variant_body_tokens)*
-                            },))
-                }
+                serde_json::Value::Object(mut obj) => tokenize::enumeration(
+                    enum_name,
+                    obj,
+                    &mut inner_structs,
+                    &variant_name_tokens,
+                ),
                 non_object => {
                     let (variant_body_tokens, new_structs, _terminal_enum) =
                         tokenize::value(&variant_name, non_object)?;

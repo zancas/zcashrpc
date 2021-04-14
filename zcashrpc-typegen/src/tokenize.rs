@@ -52,6 +52,21 @@ pub(crate) fn value(
     }
 }
 
+pub(crate) fn enumeration(
+    enum_name: &str,
+    obj: serde_json::Map<String, serde_json::Value>,
+    inner_structs: &mut std::vec::Vec<TokenStream>,
+    variant_name_tokens: &proc_macro2::Ident,
+) -> TypegenResult<TokenStream> {
+    let field_data = crate::handle_fields(enum_name, obj)?;
+    inner_structs.extend(field_data.inner_structs);
+    let variant_body_tokens = field_data.ident_val_tokens;
+    Ok(quote!(
+                            #variant_name_tokens {
+                                #(#variant_body_tokens)*
+                            },))
+}
+
 fn terminal(
     name: &str,
     label: &str,
