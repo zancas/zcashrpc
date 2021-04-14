@@ -228,8 +228,8 @@ pub mod getaddednodeinfo {
 pub mod getaddressbalance {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum GetaddressbalanceArguments {
-        Regular { one: One },
-        Verbose { one_address: String },
+        MultiAddress { one: One },
+        Address { one_address: String },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct One {
@@ -244,8 +244,8 @@ pub mod getaddressbalance {
 pub mod getaddressdeltas {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum GetaddressdeltasArguments {
-        Regular { one: One },
-        Verbose { one_address: String },
+        MultiAddress { one: One },
+        Address { one_address: String },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct One {
@@ -300,8 +300,8 @@ pub mod getaddressesbyaccount {
 pub mod getaddressmempool {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum GetaddressmempoolArguments {
-        Regular { one: One },
-        Verbose { one_address: String },
+        MultiAddress { one: One },
+        Address { one_address: String },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct One {
@@ -322,8 +322,8 @@ pub mod getaddressmempool {
 pub mod getaddresstxids {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum GetaddresstxidsArguments {
-        Regular { one: One },
-        Verbose { one_address: String },
+        MultiAddress { one: One },
+        Address { one_address: String },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct One {
@@ -336,8 +336,8 @@ pub mod getaddresstxids {
 pub mod getaddressutxos {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum GetaddressutxosArguments {
-        Regular { one: One },
-        Verbose { one_address: String },
+        MultiAddress { one: One },
+        Address { one_address: String },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct One {

@@ -192,7 +192,7 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
 }
 
 const RESPONSE_VARIANTS: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
-const ARGUMENT_VARIANTS: &[&str] = &["Address", "MultiAddress"];
+const ARGUMENT_VARIANTS: &[&str] = &["MultiAddress", "Address"];
 
 fn get_name_and_body_from_file(
     file: &std::path::Path,
