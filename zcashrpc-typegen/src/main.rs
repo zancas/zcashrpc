@@ -348,13 +348,12 @@ fn arguments_enumgen(
         .zip(ARGUMENT_VARIANTS.iter())
         .map(|(obj, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
-            let field_data = handle_fields(enum_name, obj)?;
-            inner_structs.extend(field_data.inner_structs);
-            let variant_body_tokens = field_data.ident_val_tokens;
-            Ok(quote!(
-                            #variant_name_tokens {
-                                #(#variant_body_tokens)*
-                            },))
+            tokenize::enumeration(
+                enum_name,
+                obj,
+                &mut inner_structs,
+                &variant_name_tokens,
+            )
         })
         .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
