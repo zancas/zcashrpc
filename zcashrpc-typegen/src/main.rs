@@ -191,7 +191,8 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
     Ok(quote::quote!(#(#output)*))
 }
 
-const VARIANT_NAMES: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
+const RESPONSE_VARIANTS: &[&str] = &["Regular", "Verbose", "VeryVerbose"];
+const ARGUMENT_VARIANTS: &[&str] = &["Address", "MultiAddress"];
 
 fn get_name_and_body_from_file(
     file: &std::path::Path,
@@ -295,14 +296,13 @@ fn response_enumgen(
     //Don't let the identical type signatures fool you.
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
-    assert!(inner_nodes.len() <= VARIANT_NAMES.len());
+    assert!(inner_nodes.len() <= RESPONSE_VARIANTS.len());
     let mut inner_structs = Vec::new();
     let ident = callsite_ident(enum_name);
     let enum_code: Vec<TokenStream> = inner_nodes
         .into_iter()
-        .zip(VARIANT_NAMES.iter())
+        .zip(RESPONSE_VARIANTS.iter())
         .map(|(value, variant_name)| {
-            let variant_name = capitalize_first_char(&variant_name);
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
                 serde_json::Value::Object(mut obj) => {
@@ -337,33 +337,27 @@ fn arguments_enumgen(
     //Don't let the identical type signatures fool you.
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
-    assert!(inner_nodes.len() <= VARIANT_NAMES.len());
     let mut inner_structs = Vec::new();
     let ident = callsite_ident(enum_name);
     let enum_code: Vec<TokenStream> = inner_nodes
         .into_iter()
-        .zip(VARIANT_NAMES.iter())
-        .map(|(value, variant_name)| {
-            let variant_name = capitalize_first_char(&variant_name);
+        .map(|value| {
+            if let serde_json::Value::Object(obj) = value {
+                handle_argument_fields_names(obj)
+            } else {
+                panic!("Not an Object variant!")
+            }
+        })
+        .zip(ARGUMENT_VARIANTS.iter())
+        .map(|(obj, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
-            match value {
-                serde_json::Value::Object(mut obj) => {
-                    obj = handle_argument_fields_names(obj);
-                    let field_data = handle_fields(enum_name, obj)?;
-                    inner_structs.extend(field_data.inner_structs);
-                    let variant_body_tokens = field_data.ident_val_tokens;
-                    Ok(quote!(
+            let field_data = handle_fields(enum_name, obj)?;
+            inner_structs.extend(field_data.inner_structs);
+            let variant_body_tokens = field_data.ident_val_tokens;
+            Ok(quote!(
                             #variant_name_tokens {
                                 #(#variant_body_tokens)*
                             },))
-                }
-                non_object => {
-                    let (variant_body_tokens, new_structs, _terminal_enum) =
-                        tokenize::value(&variant_name, non_object)?;
-                    inner_structs.extend(new_structs);
-                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
-                }
-            }
         })
         .collect::<TypegenResult<Vec<TokenStream>>>()?;
     inner_structs.push(quote!(
@@ -423,8 +417,8 @@ fn argumentgen(
 fn handle_argument_field_name(field_name: String) -> String {
     field_name
         .chars()
-        .map(|c| {
-            match c.to_string().as_str() {
+        .map(|a_char| {
+            match a_char.to_string().as_str() {
                 "-" | "_" => "_",
                 "<" => "<",
                 ">" => ">",
