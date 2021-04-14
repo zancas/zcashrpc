@@ -52,7 +52,7 @@ pub(crate) fn value(
     }
 }
 
-pub(crate) fn enumeration(
+pub(crate) fn variant(
     enum_name: &str,
     obj: serde_json::Map<String, serde_json::Value>,
     inner_structs: &mut std::vec::Vec<TokenStream>,
