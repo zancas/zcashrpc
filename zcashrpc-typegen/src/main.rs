@@ -174,10 +174,11 @@ fn process_arguments(file: &std::path::Path) -> TypegenResult<TokenStream> {
                     under_to_camel(&type_name)
                 ),
             },
-            2 => enumgen(arg_sets, &type_name, true)?,
+
+            2 => arguments_enumgen(arg_sets, &type_name)?,
             otherwise => {
                 eprint!("Error, known RPC help output contains a maximum of two sets of arguments, but we found {} this time.", otherwise);
-                enumgen(arg_sets, &type_name, true)?
+                arguments_enumgen(arg_sets, &type_name)?
             }
         },
         non_array => {
@@ -330,12 +331,11 @@ fn response_enumgen(
     ));
     Ok(inner_structs)
 }
-fn enumgen(
+fn arguments_enumgen(
     inner_nodes: Vec<serde_json::Value>,
     //This one layer out from the map that's passed to structgen!
     //Don't let the identical type signatures fool you.
     enum_name: &str,
-    argument: bool,
 ) -> TypegenResult<Vec<TokenStream>> {
     assert!(inner_nodes.len() <= VARIANT_NAMES.len());
     let mut inner_structs = Vec::new();
@@ -348,9 +348,7 @@ fn enumgen(
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
                 serde_json::Value::Object(mut obj) => {
-                    if argument {
-                        obj = handle_argument_fields_names(obj);
-                    }
+                    obj = handle_argument_fields_names(obj);
                     let field_data = handle_fields(enum_name, obj)?;
                     inner_structs.extend(field_data.inner_structs);
                     let variant_body_tokens = field_data.ident_val_tokens;
