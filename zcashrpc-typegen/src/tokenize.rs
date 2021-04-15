@@ -116,7 +116,6 @@ fn array(
             location: name.to_string(),
         })?,
         1 => {
-            println!("Array of: {}", name);
             let (val, inner_structs, _terminal_enum) =
                 value(name, array_of.pop().unwrap())?;
             Ok((quote!(Vec<#val>), inner_structs))
