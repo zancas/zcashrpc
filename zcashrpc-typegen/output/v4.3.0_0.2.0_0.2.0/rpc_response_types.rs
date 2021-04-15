@@ -652,6 +652,50 @@ pub mod getblocksubsidy {
         pub miner: rust_decimal::Decimal,
     }
 }
+pub mod getblocktemplate {
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct GetblocktemplateArguments {
+        pub one_jsonrequestobject: Option<String>,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct Coinbasetxn {
+        pub data: String,
+        pub depends: Vec<rust_decimal::Decimal>,
+        pub fee: rust_decimal::Decimal,
+        pub foundersreward: rust_decimal::Decimal,
+        pub hash: String,
+        pub required: bool,
+        pub sigops: rust_decimal::Decimal,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct GetblocktemplateResponse {
+        pub bits: String,
+        pub coinbasetxn: Coinbasetxn,
+        pub curtime: rust_decimal::Decimal,
+        pub finalsaplingroothash: String,
+        pub height: rust_decimal::Decimal,
+        pub lightclientroothash: String,
+        pub longpollid: String,
+        pub mintime: rust_decimal::Decimal,
+        pub mutable: Vec<String>,
+        pub noncerange: String,
+        pub previousblockhash: String,
+        pub sigoplimit: rust_decimal::Decimal,
+        pub sizelimit: rust_decimal::Decimal,
+        pub target: String,
+        pub transactions: Vec<Transactions>,
+        pub version: rust_decimal::Decimal,
+    }
+    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
+    pub struct Transactions {
+        pub data: String,
+        pub depends: Vec<rust_decimal::Decimal>,
+        pub fee: rust_decimal::Decimal,
+        pub hash: String,
+        pub required: bool,
+        pub sigops: rust_decimal::Decimal,
+    }
+}
 pub mod getchaintips {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct GetchaintipsArguments;
