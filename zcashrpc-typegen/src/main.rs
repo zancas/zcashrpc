@@ -92,6 +92,7 @@ fn dispatch_to_processors(
         name => panic!("Bad file name: '{}'", name),
     }
 }
+
 fn write_output_to_file(code: TokenStream) {
     use std::io::Write as _;
     let mut outfile = std::fs::OpenOptions::new()
@@ -292,8 +293,6 @@ fn handle_options_and_keywords(
 
 fn response_enumgen(
     inner_nodes: Vec<serde_json::Value>,
-    //This one layer out from the map that's passed to structgen!
-    //Don't let the identical type signatures fool you.
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
     assert!(inner_nodes.len() <= RESPONSE_VARIANTS.len());
@@ -330,8 +329,6 @@ fn response_enumgen(
 }
 fn arguments_enumgen(
     inner_nodes: Vec<serde_json::Value>,
-    //This one layer out from the map that's passed to structgen!
-    //Don't let the identical type signatures fool you.
     enum_name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
     let mut inner_structs = Vec::new();
