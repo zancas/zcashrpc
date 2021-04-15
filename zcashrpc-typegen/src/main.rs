@@ -361,6 +361,40 @@ fn arguments_enumgen(
     ));
     Ok(inner_structs)
 }
+fn inner_enumgen(
+    inner_nodes: Vec<(serde_json::Value, &str)>,
+    enum_name: &str,
+) -> TypegenResult<Vec<TokenStream>> {
+    let mut inner_structs = Vec::new();
+    let ident = callsite_ident(enum_name);
+    let enum_code: Vec<TokenStream> = inner_nodes
+        .into_iter()
+        .map(|(value, variant_name)| {
+            let variant_name_tokens = callsite_ident(&variant_name);
+            match value {
+                serde_json::Value::Object(obj) => tokenize::enumeration(
+                    enum_name,
+                    obj,
+                    &mut inner_structs,
+                    &variant_name_tokens,
+                ),
+                non_object => {
+                    let (variant_body_tokens, new_structs, _terminal_enum) =
+                        tokenize::value(&variant_name, non_object)?;
+                    inner_structs.extend(new_structs);
+                    Ok(quote!(#variant_name_tokens(#variant_body_tokens),))
+                }
+            }
+        })
+        .collect::<TypegenResult<Vec<TokenStream>>>()?;
+    inner_structs.push(quote!(
+            #[derive(Debug, serde::Deserialize, serde::Serialize)]
+            pub enum #ident {
+                #(#enum_code)*
+            }
+    ));
+    Ok(inner_structs)
+}
 
 fn structgen(
     inner_nodes: serde_json::Map<String, serde_json::Value>,
@@ -530,10 +564,8 @@ fn alias(
     name: &str,
 ) -> TypegenResult<Vec<TokenStream>> {
     let ident = callsite_ident(&name);
-    let (type_body, mut inner_structs, terminal_enum) = tokenize::value(
-        &capitalize_first_char(name.trim_end_matches("Response")),
-        data,
-    )?;
+    let (type_body, mut inner_structs, terminal_enum) =
+        tokenize::value(&name.trim_end_matches("Response"), data)?;
     if !terminal_enum {
         let aliased = quote!(
             pub type #ident = #type_body;

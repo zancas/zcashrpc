@@ -105,18 +105,35 @@ fn terminal(
     ))
 }
 
+const Z_GETOPERATION_VARIANTS: &[&str] = &["Excecuting", "Success", "Failed"];
 fn array(
     name: &str,
     mut array_of: Vec<serde_json::Value>,
 ) -> TypegenResult<(TokenStream, Vec<TokenStream>)> {
-    let (val, inner_structs, _terminal_enum) = value(
-        name,
-        array_of.pop().ok_or(error::QuizfaceAnnotationError {
+    match array_of.len() {
+        0 => Err(error::QuizfaceAnnotationError {
             kind: error::InvalidAnnotationKind::EmptyArray,
             location: name.to_string(),
         })?,
-    )?;
-    Ok((quote!(Vec<#val>), inner_structs))
+        1 => {
+            println!("Array of: {}", name);
+            let (val, inner_structs, _terminal_enum) =
+                value(name, array_of.pop().unwrap())?;
+            Ok((quote!(Vec<#val>), inner_structs))
+        }
+        _ => {
+            let ident = crate::callsite_ident(name);
+            crate::inner_enumgen(
+                array_of
+                    .into_iter()
+                    .zip(Z_GETOPERATION_VARIANTS)
+                    .map(|(x, y)| (x, *y))
+                    .collect(),
+                name,
+            )
+            .map(|x| (quote!(#ident), x))
+        }
+    }
 }
 
 fn object(
