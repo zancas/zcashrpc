@@ -1619,7 +1619,7 @@ pub mod z_getnotescount {
 pub mod z_getoperationresult {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct ZGetoperationresultArguments {
-        pub one_stand_in: Option<String>,
+        pub one: Option<Vec<String>>,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum ZGetoperationresult {
@@ -1674,13 +1674,34 @@ pub mod z_getoperationresult {
 pub mod z_getoperationstatus {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct ZGetoperationstatusArguments {
-        pub one_stand_in: Option<String>,
+        pub one: Option<Vec<String>>,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub enum ZGetoperationstatus {
-        Excecuting(Vec<Excecuting>),
-        Success(Vec<Success>),
-        Failed(Vec<Failed>),
+        Excecuting {
+            creation_time: rust_decimal::Decimal,
+            id: String,
+            method: String,
+            params: Params,
+            status: String,
+        },
+        Success {
+            creation_time: rust_decimal::Decimal,
+            execution_secs: rust_decimal::Decimal,
+            id: String,
+            method: String,
+            params: Params,
+            result: Result,
+            status: String,
+        },
+        Failed {
+            creation_time: rust_decimal::Decimal,
+            error: Error,
+            id: String,
+            method: String,
+            params: Params,
+            status: String,
+        },
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Amounts {
@@ -1693,23 +1714,6 @@ pub mod z_getoperationstatus {
         pub message: String,
     }
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Excecuting {
-        pub creation_time: rust_decimal::Decimal,
-        pub id: String,
-        pub method: String,
-        pub params: Params,
-        pub status: String,
-    }
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Failed {
-        pub creation_time: rust_decimal::Decimal,
-        pub error: Error,
-        pub id: String,
-        pub method: String,
-        pub params: Params,
-        pub status: String,
-    }
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
     pub struct Params {
         pub amounts: Vec<Amounts>,
         pub fee: rust_decimal::Decimal,
@@ -1720,17 +1724,7 @@ pub mod z_getoperationstatus {
     pub struct Result {
         pub txid: String,
     }
-    #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
-    pub struct Success {
-        pub creation_time: rust_decimal::Decimal,
-        pub execution_secs: rust_decimal::Decimal,
-        pub id: String,
-        pub method: String,
-        pub params: Params,
-        pub result: Result,
-        pub status: String,
-    }
-    pub type ZGetoperationstatusResponse = ZGetoperationstatus;
+    pub type ZGetoperationstatusResponse = Vec<ZGetoperationstatus>;
 }
 pub mod z_getpaymentdisclosure {
     #[derive(Debug, serde :: Deserialize, serde :: Serialize)]
