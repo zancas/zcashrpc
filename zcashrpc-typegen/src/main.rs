@@ -372,7 +372,7 @@ fn inner_enumgen(
         .map(|(value, variant_name)| {
             let variant_name_tokens = callsite_ident(&variant_name);
             match value {
-                serde_json::Value::Object(obj) => tokenize::enumeration(
+                serde_json::Value::Object(obj) => tokenize::variant(
                     enum_name,
                     obj,
                     &mut inner_structs,
